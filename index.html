@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Piano Studio Invoice - Salim Chadraoui</title>
+    <title>Piano Art Academy - Invoice Template</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <style>
         /* Modern UI Styles */
@@ -14,7 +14,10 @@
         .excel-table th { background-color: #f1f5f9; border: 1px solid #cbd5e1; font-size: 0.75rem; color: #475569; }
         .excel-table td { border: 1px solid #e2e8f0; }
 
-        /* PRINT STYLES - This is what makes the PDF look good */
+        #emptyState { display: none; }
+        #invoiceItems:empty + #emptyState { display: table-row; }
+
+        /* PRINT STYLES */
         @media print {
             @page { margin: 0.5cm; }
             .no-print { display: none !important; }
@@ -29,27 +32,25 @@
             }
             .bg-slate-200 { background-color: white !important; }
             input, textarea, select { background-color: transparent !important; border: none !important; }
-            /* Force colors in PDF */
             .bg-slate-900 { background-color: #0f172a !important; -webkit-print-color-adjust: exact; }
-            .text-blue-700 { color: #1d4ed8 !important; }
-            .text-white { color: white !important; }
+            .text-blue-600 { color: #2563eb !important; }
         }
     </style>
 </head>
 <body class="bg-slate-200 min-h-screen py-8 px-4 font-sans text-slate-900">
 
-    <!-- Top Toolbar (Selection Area) -->
+    <!-- Top Toolbar -->
     <div class="max-w-5xl mx-auto no-print mb-6 flex justify-between items-center bg-white p-4 rounded-lg shadow-sm border border-slate-300">
         <div>
-            <h1 class="text-xl font-bold text-slate-800">Tuition Invoice Manager</h1>
-            <p class="text-sm text-slate-500">Spreadsheet view for Fall/Winter 2025</p>
+            <h1 class="text-xl font-bold text-slate-800">Piano Art Academy</h1>
+            <p class="text-sm text-slate-500">Invoice Generator (Blank Template)</p>
         </div>
         <div class="flex gap-3">
-            <button type="button" onclick="addRow('', 'New Lesson', 'completed', 80, 1.5)" class="bg-slate-100 hover:bg-slate-200 text-slate-700 px-4 py-2 rounded font-medium transition text-sm border border-slate-300 flex items-center gap-2">
+            <button type="button" onclick="addRow('', 'Piano Lesson', 'completed', 80, 1.5)" class="bg-slate-100 hover:bg-slate-200 text-slate-700 px-4 py-2 rounded font-medium transition text-sm border border-slate-300 flex items-center gap-2">
                 <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="12" y1="5" x2="12" y2="19"></line><line x1="5" y1="12" x2="19" y2="12"></line></svg>
                 Add Row
             </button>
-            <button type="button" onclick="handlePrint()" class="bg-blue-600 hover:bg-blue-700 text-white px-6 py-2 rounded font-medium shadow transition text-sm flex items-center gap-2">
+            <button type="button" onclick="window.print()" class="bg-blue-600 hover:bg-blue-700 text-white px-6 py-2 rounded font-medium shadow transition text-sm flex items-center gap-2">
                 <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path><polyline points="7 10 12 15 17 10"></polyline><line x1="12" y1="15" x2="12" y2="3"></line></svg>
                 Export / Print PDF
             </button>
@@ -57,26 +58,37 @@
     </div>
 
     <!-- Main Invoice Container -->
-    <div id="printArea" class="invoice-container max-w-5xl mx-auto bg-white shadow-2xl p-10 border border-slate-300 rounded-sm">
+    <div class="invoice-container max-w-5xl mx-auto bg-white shadow-2xl p-10 border border-slate-300 rounded-sm">
         
-        <!-- Header Section -->
-        <div class="flex justify-between items-start mb-8">
-            <div class="w-2/3">
-                <input type="text" class="text-3xl font-black block w-full mb-1 text-slate-800 tracking-tight" value="SALIM CHADRAOUI">
-                <div class="flex items-center gap-2 text-slate-400 font-bold tracking-widest text-xs mb-6 uppercase">
-                    <input type="text" class="w-12 text-center" value="2025">
-                    <span>|</span>
-                    <input type="text" class="w-32" value="FALL/WINTER">
+        <!-- Academy Branding Header -->
+        <div class="flex justify-between items-start mb-10 border-b pb-8">
+            <div>
+                <h1 class="text-3xl font-black text-slate-900 tracking-tighter mb-1 uppercase">Piano Art Academy</h1>
+                <div class="text-xs text-slate-500 space-y-1 font-medium">
+                    <p>9731 Haven Crossing Ct. • Houston, TX 77065</p>
+                    <p>Phone: 832-860-4916 • Email: quyenvo87@gmail.com</p>
                 </div>
-                <h2 class="text-blue-600 font-bold text-sm tracking-widest uppercase border-b-2 border-blue-600 inline-block pb-1">Tuition Invoice</h2>
             </div>
             <div class="text-right">
-                <div class="bg-slate-900 text-white px-5 py-3 rounded-md mb-2 inline-block shadow-lg">
-                    <span class="text-[10px] uppercase opacity-60 block tracking-widest font-bold mb-1">Total Due</span>
+                <h2 class="text-blue-600 font-bold text-sm tracking-widest uppercase mb-4">Tuition Invoice</h2>
+                <div class="bg-slate-900 text-white px-5 py-3 rounded-md inline-block shadow-lg">
+                    <span class="text-[10px] uppercase opacity-60 block tracking-widest font-bold mb-1">Total Balance</span>
                     <span id="grandTotalHeader" class="text-2xl font-mono font-bold tracking-tighter">$0.00</span>
                 </div>
-                <p class="text-[9px] text-slate-400 uppercase font-black mt-2 tracking-widest">Dated: <span id="genDate"></span></p>
             </div>
+        </div>
+
+        <!-- Student Info Section -->
+        <div class="mb-8">
+            <div class="inline-block border-l-4 border-blue-600 pl-4">
+                <input type="text" class="text-xl font-bold block w-full text-slate-800 uppercase" placeholder="ENTER STUDENT NAME" value="">
+                <div class="flex items-center gap-2 text-slate-400 font-bold tracking-widest text-[10px] uppercase">
+                    <input type="text" id="currentYearInput" class="w-16 placeholder:text-slate-300" placeholder="YEAR" value="">
+                    <span>|</span>
+                    <input type="text" class="w-40 placeholder:text-slate-300 uppercase" placeholder="TERM" value="">
+                </div>
+            </div>
+            <p class="text-[9px] text-slate-400 uppercase font-black mt-2 tracking-widest pl-5">Date: <span id="genDate"></span></p>
         </div>
 
         <!-- Spreadsheet Table -->
@@ -93,9 +105,12 @@
                         <th class="py-3 px-3 text-center no-print w-10"></th>
                     </tr>
                 </thead>
-                <tbody id="invoiceItems">
-                    <!-- Loaded via JavaScript -->
-                </tbody>
+                <tbody id="invoiceItems"></tbody>
+                <tr id="emptyState">
+                    <td colspan="7" class="py-12 text-center text-slate-300 italic text-sm">
+                        No items added yet. Click "Add Row" above to start.
+                    </td>
+                </tr>
             </table>
         </div>
 
@@ -103,10 +118,7 @@
         <div class="mt-10 flex flex-col md:flex-row justify-between items-start gap-10">
             <div class="w-full md:w-1/2">
                 <h4 class="text-[10px] font-bold text-slate-400 uppercase mb-3 tracking-widest">Office Billing Notes</h4>
-                <textarea class="w-full text-xs text-slate-600 leading-relaxed bg-slate-50 p-4 border border-slate-200 rounded-md" rows="4">Fall/Winter Session Billing. 
-Standard Rate: $80.00/hr
-Session Length: 1.5 Hours
-Lessons marked "Missed" are excluded from the total balance.</textarea>
+                <textarea class="w-full text-xs text-slate-600 leading-relaxed bg-slate-50 p-4 border border-slate-200 rounded-md" rows="4" placeholder="Enter any additional notes here...">Lessons marked "Missed" are excluded from the total balance.</textarea>
             </div>
             
             <div class="w-full md:w-72 space-y-3">
@@ -115,7 +127,7 @@ Lessons marked "Missed" are excluded from the total balance.</textarea>
                     <span id="lessonCount">0</span>
                 </div>
                 <div class="flex justify-between bg-slate-900 text-white p-4 rounded-md shadow-inner">
-                    <span class="font-bold text-xs uppercase tracking-widest self-center opacity-70">Final Balance</span>
+                    <span class="font-bold text-xs uppercase tracking-widest self-center opacity-70">Amount Due</span>
                     <span id="subtotalDisplay" class="font-mono font-bold text-xl">$0.00</span>
                 </div>
             </div>
@@ -123,30 +135,22 @@ Lessons marked "Missed" are excluded from the total balance.</textarea>
     </div>
 
     <script>
-        // Set the generation date
-        document.getElementById('genDate').textContent = new Date().toLocaleDateString();
-
-        const studentData = [
-            { date: "8/2", note: "Lesson" }, { date: "8/9", note: "Lesson" },
-            { date: "8/19", note: "Lesson" }, { date: "8/23", note: "Lesson" },
-            { date: "8/30", note: "Lesson" }, { date: "9/6", note: "Lesson" },
-            { date: "9/13", note: "Lesson" }, { date: "9/20", note: "Lesson" },
-            { date: "9/27", note: "Missed Lesson", status: "missed" },
-            { date: "10/4", note: "Missed Lesson", status: "missed" },
-            { date: "10/6", note: "Lesson" }, { date: "10/8", note: "Lesson" },
-            { date: "10/11", note: "Lesson" }, { date: "10/19", note: "Lesson" },
-            { date: "10/25", note: "Lesson" }, { date: "11/1", note: "Fall Festival", status: "completed" },
-            { date: "11/8", note: "Lesson" }, { date: "11/15", note: "Lesson" },
-            { date: "11/22", note: "Lesson" }, { date: "11/29", note: "Lesson" },
-            { date: "12/6", note: "Lesson" }, { date: "12/13", note: "Lesson" },
-            { date: "12/20", note: "Lesson" }, { date: "12/27", note: "Lesson" }
-        ];
-
-        function handlePrint() {
-            window.print();
+        // Update both the display date and the year field automatically
+        function updateCurrentDate() {
+            const now = new Date();
+            document.getElementById('genDate').textContent = now.toLocaleDateString();
+            
+            // Only update year if it hasn't been manually typed yet
+            const yearInput = document.getElementById('currentYearInput');
+            if (!yearInput.value) {
+                yearInput.value = now.getFullYear();
+            }
         }
 
-        function addRow(date = "", note = "", status = "completed", rate = 80, hrs = 1.5) {
+        // Initialize on load
+        updateCurrentDate();
+
+        function addRow(date = "", note = "Piano Lesson", status = "completed", rate = 80, hrs = 1.5) {
             const tbody = document.getElementById('invoiceItems');
             const row = document.createElement('tr');
             row.className = "text-sm group hover:bg-slate-50 transition-colors";
@@ -195,9 +199,9 @@ Lessons marked "Missed" are excluded from the total balance.</textarea>
                 if (status === 'completed') {
                     amount = hrs * rate;
                     count++;
-                    statusSelect.style.color = "#16a34a"; // green-600
+                    statusSelect.style.color = "#16a34a";
                 } else {
-                    statusSelect.style.color = "#f87171"; // red-400
+                    statusSelect.style.color = "#f87171";
                 }
                 
                 const amountDisplay = row.querySelector('.row-total');
@@ -212,12 +216,6 @@ Lessons marked "Missed" are excluded from the total balance.</textarea>
             document.getElementById('grandTotalHeader').textContent = formattedTotal;
             document.getElementById('lessonCount').textContent = count;
         }
-
-        window.onload = () => {
-            studentData.forEach(item => {
-                addRow(item.date, item.note, item.status || "completed");
-            });
-        };
     </script>
 </body>
 </html>
