@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Piano Art Academy - Invoice Template</title>
+    <title>Piano Art Academy - Invoice Manager</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <style>
         /* Modern UI Styles */
@@ -17,12 +17,8 @@
         #emptyState { display: none; }
         #invoiceItems:empty + #emptyState { display: table-row; }
 
-        /* Auto-expanding textarea style */
-        .auto-expand {
-            overflow: hidden;
-            min-height: 1.5rem;
-            resize: none;
-        }
+        .auto-expand { overflow: hidden; min-height: 1.5rem; resize: none; }
+        .student-expand { min-height: 2rem; line-height: 1.2; }
 
         /* PRINT STYLES */
         @media print {
@@ -49,14 +45,15 @@
     <!-- Top Toolbar -->
     <div class="max-w-5xl mx-auto no-print mb-6 flex justify-between items-center bg-white p-4 rounded-lg shadow-sm border border-slate-300">
         <div>
-            <h1 class="text-xl font-bold text-slate-800">Piano Art Academy</h1>
-            <p class="text-sm text-slate-500">Invoice Generator (Blank Template)</p>
+            <h1 class="text-xl font-bold text-slate-800 uppercase tracking-tighter">Piano Art Academy</h1>
+            <p class="text-xs text-slate-500" id="authStatus">Initializing Database...</p>
         </div>
         <div class="flex flex-wrap gap-2 items-center">
-            <span class="text-xs text-slate-400 mr-2 italic">Tip: Press "Enter" to jump to the box below in the same column.</span>
-            <button type="button" onclick="window.print()" class="bg-emerald-600 hover:bg-emerald-700 text-white px-6 py-2 rounded font-medium shadow transition text-sm flex items-center gap-2">
-                <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path><polyline points="7 10 12 15 17 10"></polyline><line x1="12" y1="15" x2="12" y2="3"></line></svg>
-                Export / Print PDF
+            <button type="button" onclick="saveInvoice()" class="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded font-medium shadow transition text-sm flex items-center gap-2">
+                Save to Cloud
+            </button>
+            <button type="button" onclick="window.print()" class="bg-slate-800 hover:bg-slate-900 text-white px-4 py-2 rounded font-medium shadow transition text-sm flex items-center gap-2">
+                Print / PDF
             </button>
         </div>
     </div>
@@ -85,12 +82,20 @@
 
         <!-- Student Info Section -->
         <div class="mb-8 flex justify-between items-end">
-            <div class="inline-block border-l-4 border-blue-600 pl-4">
-                <input type="text" class="text-xl font-bold block w-full text-slate-800 uppercase" placeholder="ENTER STUDENT NAME" value="">
+            <div class="inline-block border-l-4 border-blue-600 pl-4 w-full max-w-md">
+                <div class="relative group">
+                    <textarea 
+                        id="studentName" 
+                        rows="1"
+                        class="auto-expand student-expand text-xl font-bold block w-full text-slate-800 uppercase bg-transparent" 
+                        placeholder="ENTER STUDENT NAME" 
+                        oninput="this.style.height = ''; this.style.height = this.scrollHeight + 'px'; showSuggestions(this.value)"></textarea>
+                    <div id="suggestions" class="absolute z-10 w-full bg-white border border-slate-200 shadow-xl rounded-b-md hidden no-print"></div>
+                </div>
                 <div class="flex items-center gap-2 text-slate-400 font-bold tracking-widest text-[10px] uppercase">
-                    <input type="text" class="w-16 placeholder:text-slate-300" placeholder="YEAR" value="">
+                    <input type="text" id="invoiceYear" class="w-16 placeholder:text-slate-300" placeholder="YEAR">
                     <span>|</span>
-                    <input type="text" class="w-40 placeholder:text-slate-300 uppercase" placeholder="TERM" value="">
+                    <input type="text" id="invoiceTerm" class="w-40 placeholder:text-slate-300 uppercase" placeholder="TERM">
                 </div>
                 <p class="text-[9px] text-slate-400 uppercase font-black mt-2 tracking-widest pl-1">Invoice Date: <span id="genDate"></span></p>
             </div>
@@ -108,8 +113,7 @@
                         <th class="py-3 px-3 text-right w-24">Rate ($)</th>
                         <th class="py-3 px-3 text-right w-32">Amount</th>
                         <th class="py-3 px-3 text-center no-print w-10 relative">
-                            <!-- Addition Plus Button -->
-                            <button onclick="smartAddRow()" class="absolute inset-0 w-full h-full bg-blue-600 hover:bg-blue-700 text-white flex items-center justify-center transition-colors shadow-sm" title="Add new row">
+                            <button onclick="smartAddRow()" class="absolute inset-0 w-full h-full bg-blue-600 hover:bg-blue-700 text-white flex items-center justify-center transition-colors shadow-sm">
                                 <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><line x1="12" y1="5" x2="12" y2="19"></line><line x1="5" y1="12" x2="19" y2="12"></line></svg>
                             </button>
                         </th>
@@ -118,7 +122,7 @@
                 <tbody id="invoiceItems"></tbody>
                 <tr id="emptyState">
                     <td colspan="7" class="py-12 text-center text-slate-300 italic text-sm">
-                        No items added yet. Click the blue "+" button in the header to start.
+                        No items added yet. Click the blue "+" button to start.
                     </td>
                 </tr>
             </table>
@@ -133,14 +137,12 @@
                     <p>Lessons marked "Missed" are excluded from the total balance.</p>
                 </div>
                 
-                <div class="flex flex-col gap-1">
-                    <textarea 
-                        id="commentsBox"
-                        class="auto-expand w-full text-xs text-slate-600 leading-relaxed bg-slate-50 p-2 border border-slate-200 rounded-md focus:bg-white" 
-                        rows="1" 
-                        placeholder="Type additional notes here..."
-                        oninput="this.style.height = ''; this.style.height = this.scrollHeight + 'px'"></textarea>
-                </div>
+                <textarea 
+                    id="commentsBox"
+                    class="auto-expand w-full text-xs text-slate-600 leading-relaxed bg-slate-50 p-2 border border-slate-200 rounded-md focus:bg-white" 
+                    rows="1" 
+                    placeholder="Type additional notes here..."
+                    oninput="this.style.height = ''; this.style.height = this.scrollHeight + 'px'"></textarea>
             </div>
             
             <div class="w-full md:w-72 space-y-3">
@@ -156,61 +158,172 @@
         </div>
     </div>
 
+    <!-- Firebase SDKs -->
+    <script type="module">
+        import { initializeApp } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-app.js";
+        import { getAuth, signInWithCustomToken, signInAnonymously, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js";
+        import { getFirestore, collection, doc, setDoc, getDoc, getDocs, query, deleteDoc } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
+
+        const firebaseConfig = JSON.parse(__firebase_config);
+        const app = initializeApp(firebaseConfig);
+        const auth = getAuth(app);
+        const db = getFirestore(app);
+        const appId = typeof __app_id !== 'undefined' ? __app_id : 'piano-academy-invoice';
+
+        let currentUser = null;
+        let studentsData = [];
+
+        const initAuth = async () => {
+            try {
+                if (typeof __initial_auth_token !== 'undefined' && __initial_auth_token) {
+                    await signInWithCustomToken(auth, __initial_auth_token);
+                } else {
+                    await signInAnonymously(auth);
+                }
+            } catch (error) {
+                console.error("Auth error:", error);
+                document.getElementById('authStatus').textContent = "Database Offline";
+            }
+        };
+
+        onAuthStateChanged(auth, async (user) => {
+            currentUser = user;
+            if (user) {
+                document.getElementById('authStatus').textContent = "Database Connected";
+                loadStudents();
+            }
+        });
+
+        initAuth();
+
+        async function loadStudents() {
+            if (!currentUser) return;
+            try {
+                const q = collection(db, 'artifacts', appId, 'public', 'data', 'students');
+                const snapshot = await getDocs(q);
+                studentsData = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+            } catch (e) { console.error(e); }
+        }
+
+        window.saveInvoice = async function() {
+            if (!currentUser) return alert("Waiting for database connection...");
+            const name = document.getElementById('studentName').value.trim();
+            if (!name) return alert("Please enter a student name");
+
+            const items = Array.from(document.querySelectorAll('#invoiceItems tr')).map(row => ({
+                date: row.querySelector('.date-input').value,
+                desc: row.querySelector('.desc-input').value,
+                status: row.querySelector('.status-select').value,
+                hrs: parseFloat(row.querySelector('.hrs-input').value) || 0,
+                rate: parseFloat(row.querySelector('.rate-input').value) || 0
+            }));
+
+            const invoiceData = {
+                studentName: name,
+                year: document.getElementById('invoiceYear').value,
+                term: document.getElementById('invoiceTerm').value,
+                items: items,
+                notes: document.getElementById('commentsBox').value,
+                updatedAt: new Date().toISOString()
+            };
+
+            try {
+                await setDoc(doc(db, 'artifacts', appId, 'public', 'data', 'students', name.toLowerCase().replace(/\s+/g, '-')), {
+                    name: name,
+                    lastRate: items.length > 0 ? items[0].rate : 85
+                }, { merge: true });
+
+                const invoiceId = `${name.toLowerCase().replace(/\s+/g, '-')}-${invoiceData.term.replace(/\s+/g, '-')}-${invoiceData.year}`;
+                await setDoc(doc(db, 'artifacts', appId, 'public', 'data', 'invoices', invoiceId), invoiceData);
+                
+                alert("Successfully saved to cloud.");
+                loadStudents();
+            } catch (e) {
+                console.error(e);
+                alert("Error saving data.");
+            }
+        };
+
+        window.showSuggestions = function(val) {
+            const container = document.getElementById('suggestions');
+            if (!val) { container.classList.add('hidden'); return; }
+            
+            const matches = studentsData.filter(s => s.name.toLowerCase().includes(val.toLowerCase()));
+            if (matches.length === 0) { container.classList.add('hidden'); return; }
+
+            container.innerHTML = matches.map(s => `
+                <div class="p-3 hover:bg-slate-50 cursor-pointer border-b last:border-0" onclick="loadStudentInvoice('${s.id}')">
+                    <p class="font-bold text-sm">${s.name}</p>
+                    <p class="text-[10px] text-slate-400 uppercase tracking-widest">Load History</p>
+                </div>
+            `).join('');
+            container.classList.remove('hidden');
+        };
+
+        window.loadStudentInvoice = async function(studentId) {
+            document.getElementById('suggestions').classList.add('hidden');
+            const term = document.getElementById('invoiceTerm').value.replace(/\s+/g, '-') || 'current';
+            const year = document.getElementById('invoiceYear').value || '2025';
+            const docRef = doc(db, 'artifacts', appId, 'public', 'data', 'invoices', `${studentId}-${term}-${year}`);
+            
+            try {
+                const res = await getDoc(docRef);
+                if (res.exists()) {
+                    const data = res.data();
+                    const nameInput = document.getElementById('studentName');
+                    nameInput.value = data.studentName;
+                    // Trigger expansion
+                    nameInput.style.height = '';
+                    nameInput.style.height = nameInput.scrollHeight + 'px';
+                    
+                    document.getElementById('commentsBox').value = data.notes;
+                    document.getElementById('invoiceItems').innerHTML = "";
+                    data.items.forEach(item => addRow(item.date, item.desc, item.status, item.rate, item.hrs));
+                } else {
+                    const student = studentsData.find(s => s.id === studentId);
+                    const nameInput = document.getElementById('studentName');
+                    nameInput.value = student.name;
+                    nameInput.style.height = '';
+                    nameInput.style.height = nameInput.scrollHeight + 'px';
+                    alert("No saved invoice for this specific term. Starting fresh with " + student.name);
+                }
+            } catch (e) { console.error(e); }
+        };
+    </script>
+
     <script>
         function updateCurrentDate() {
             const now = new Date();
             document.getElementById('genDate').textContent = now.toLocaleDateString();
+            document.getElementById('invoiceYear').value = now.getFullYear();
         }
-
         updateCurrentDate();
 
-        /**
-         * Navigation logic:
-         * - Enter moves focus to the box in the same column in the row below.
-         * - Does NOT create new rows.
-         */
         function handleKeydown(event, currentElement) {
-            if (event.key === 'Enter') {
+            if (event.key === 'Enter' && currentElement.tagName !== 'TEXTAREA') {
                 event.preventDefault();
-                
                 const currentRow = currentElement.closest('tr');
-                const tbody = currentRow.parentElement;
-                const rows = Array.from(tbody.querySelectorAll('tr'));
+                const rows = Array.from(currentRow.parentElement.querySelectorAll('tr'));
                 const rowIndex = rows.indexOf(currentRow);
-                
-                // Find column index
                 const inputsInRow = Array.from(currentRow.querySelectorAll('input, select'));
                 const colIndex = inputsInRow.indexOf(currentElement);
-                
                 if (rowIndex < rows.length - 1) {
-                    // Move to the same column in the existing row below
                     const nextRowInputs = Array.from(rows[rowIndex + 1].querySelectorAll('input, select'));
-                    if (nextRowInputs[colIndex]) {
-                        nextRowInputs[colIndex].focus();
-                    }
+                    if (nextRowInputs[colIndex]) nextRowInputs[colIndex].focus();
                 }
             }
         }
 
-        // Inherit values from the first row if available
         function smartAddRow(shouldFocusFirst = true) {
             const firstRow = document.querySelector('#invoiceItems tr');
-            let desc = "Piano Lesson";
-            let rate = 85; 
-            let hrs = 1.5;
-
+            let desc = "Piano Lesson", rate = 85, hrs = 1.5;
             if (firstRow) {
                 desc = firstRow.querySelector('.desc-input').value;
                 rate = firstRow.querySelector('.rate-input').value;
                 hrs = firstRow.querySelector('.hrs-input').value;
             }
-
             const newRow = addRow("", desc, "completed", rate, hrs);
-            
-            if (shouldFocusFirst && newRow) {
-                const dateInput = newRow.querySelector('.date-input');
-                if (dateInput) dateInput.focus();
-            }
+            if (shouldFocusFirst && newRow) newRow.querySelector('.date-input').focus();
             return newRow;
         }
 
@@ -219,29 +332,19 @@
             const row = document.createElement('tr');
             row.className = "text-sm group hover:bg-slate-50 transition-colors";
             row.innerHTML = `
+                <td class="p-2"><input type="text" class="w-full font-mono text-xs text-slate-600 date-input" value="${date}" placeholder="MM/DD" onkeydown="handleKeydown(event, this)"></td>
+                <td class="p-2"><input type="text" class="w-full text-slate-800 desc-input" value="${note}" placeholder="Description" onkeydown="handleKeydown(event, this)"></td>
                 <td class="p-2">
-                    <input type="text" class="w-full font-mono text-xs text-slate-600 date-input" value="${date}" placeholder="MM/DD" onkeydown="handleKeydown(event, this)">
-                </td>
-                <td class="p-2">
-                    <input type="text" class="w-full text-slate-800 desc-input" value="${note}" placeholder="Description" onkeydown="handleKeydown(event, this)">
-                </td>
-                <td class="p-2">
-                    <select class="status-select text-[10px] font-black uppercase w-full bg-transparent text-center cursor-pointer" onchange="calculate()" onkeydown="handleKeydown(event, this)">
+                    <select class="status-select text-[10px] font-black uppercase w-full bg-transparent text-center" onchange="calculate()" onkeydown="handleKeydown(event, this)">
                         <option value="completed" ${status === 'completed' ? 'selected' : ''}>Completed</option>
                         <option value="missed" ${status === 'missed' ? 'selected' : ''}>Missed</option>
                     </select>
                 </td>
-                <td class="p-2">
-                    <input type="number" class="w-full text-right hrs-input font-mono font-bold text-slate-700" value="${hrs}" step="0.25" oninput="calculate()" onkeydown="handleKeydown(event, this)">
-                </td>
-                <td class="p-2">
-                    <input type="number" class="w-full text-right rate-input font-mono font-bold text-slate-700" value="${rate}" oninput="calculate()" onkeydown="handleKeydown(event, this)">
-                </td>
+                <td class="p-2"><input type="number" class="w-full text-right hrs-input font-mono font-bold" value="${hrs}" step="0.25" oninput="calculate()" onkeydown="handleKeydown(event, this)"></td>
+                <td class="p-2"><input type="number" class="w-full text-right rate-input font-mono font-bold" value="${rate}" oninput="calculate()" onkeydown="handleKeydown(event, this)"></td>
                 <td class="p-2 text-right font-mono font-black text-slate-900 row-total">$0.00</td>
                 <td class="p-2 text-center no-print">
-                    <button type="button" onclick="this.parentElement.parentElement.remove(); calculate();" class="text-slate-200 hover:text-red-500 transition-colors font-bold text-xl">
-                        &times;
-                    </button>
+                    <button type="button" onclick="this.parentElement.parentElement.remove(); calculate();" class="text-slate-200 hover:text-red-500 transition-colors font-bold text-xl">&times;</button>
                 </td>
             `;
             tbody.appendChild(row);
@@ -250,35 +353,20 @@
         }
 
         function calculate() {
-            let total = 0;
-            let count = 0;
-            const rows = document.querySelectorAll('#invoiceItems tr');
-            
-            rows.forEach(row => {
-                const statusSelect = row.querySelector('.status-select');
-                const status = statusSelect.value;
+            let total = 0, count = 0;
+            document.querySelectorAll('#invoiceItems tr').forEach(row => {
+                const status = row.querySelector('.status-select').value;
                 const hrs = parseFloat(row.querySelector('.hrs-input').value) || 0;
                 const rate = parseFloat(row.querySelector('.rate-input').value) || 0;
-                
-                let amount = 0;
-                if (status === 'completed') {
-                    amount = hrs * rate;
-                    count++;
-                    statusSelect.style.color = "#16a34a";
-                } else {
-                    statusSelect.style.color = "#f87171";
-                }
-                
-                const amountDisplay = row.querySelector('.row-total');
-                amountDisplay.textContent = `$${amount.toFixed(2)}`;
-                amountDisplay.style.opacity = status === 'missed' ? '0.2' : '1';
-                
+                let amount = (status === 'completed') ? hrs * rate : 0;
+                if (status === 'completed') count++;
+                row.querySelector('.row-total').textContent = `$${amount.toFixed(2)}`;
+                row.querySelector('.row-total').style.opacity = status === 'missed' ? '0.2' : '1';
                 total += amount;
             });
-
-            const formattedTotal = `$${total.toLocaleString(undefined, {minimumFractionDigits: 2, maximumFractionDigits: 2})}`;
-            document.getElementById('subtotalDisplay').textContent = formattedTotal;
-            document.getElementById('grandTotalHeader').textContent = formattedTotal;
+            const formatted = `$${total.toLocaleString(undefined, {minimumFractionDigits: 2})}`;
+            document.getElementById('subtotalDisplay').textContent = formatted;
+            document.getElementById('grandTotalHeader').textContent = formatted;
             document.getElementById('lessonCount').textContent = count;
         }
     </script>
