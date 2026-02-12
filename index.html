@@ -45,12 +45,8 @@
             <h1 class="text-xl font-bold text-slate-800">Piano Art Academy</h1>
             <p class="text-sm text-slate-500">Invoice Generator (Blank Template)</p>
         </div>
-        <div class="flex gap-3">
-            <button type="button" onclick="addRow('', 'Piano Lesson', 'completed', 80, 1.5)" class="bg-slate-100 hover:bg-slate-200 text-slate-700 px-4 py-2 rounded font-medium transition text-sm border border-slate-300 flex items-center gap-2">
-                <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="12" y1="5" x2="12" y2="19"></line><line x1="5" y1="12" x2="19" y2="12"></line></svg>
-                Add Row
-            </button>
-            <button type="button" onclick="window.print()" class="bg-blue-600 hover:bg-blue-700 text-white px-6 py-2 rounded font-medium shadow transition text-sm flex items-center gap-2">
+        <div class="flex flex-wrap gap-2">
+            <button type="button" onclick="window.print()" class="bg-emerald-600 hover:bg-emerald-700 text-white px-6 py-2 rounded font-medium shadow transition text-sm flex items-center gap-2">
                 <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path><polyline points="7 10 12 15 17 10"></polyline><line x1="12" y1="15" x2="12" y2="3"></line></svg>
                 Export / Print PDF
             </button>
@@ -79,16 +75,16 @@
         </div>
 
         <!-- Student Info Section -->
-        <div class="mb-8">
+        <div class="mb-8 flex justify-between items-end">
             <div class="inline-block border-l-4 border-blue-600 pl-4">
                 <input type="text" class="text-xl font-bold block w-full text-slate-800 uppercase" placeholder="ENTER STUDENT NAME" value="">
                 <div class="flex items-center gap-2 text-slate-400 font-bold tracking-widest text-[10px] uppercase">
-                    <input type="text" id="currentYearInput" class="w-16 placeholder:text-slate-300" placeholder="YEAR" value="">
+                    <input type="text" class="w-16 placeholder:text-slate-300" placeholder="YEAR" value="">
                     <span>|</span>
                     <input type="text" class="w-40 placeholder:text-slate-300 uppercase" placeholder="TERM" value="">
                 </div>
+                <p class="text-[9px] text-slate-400 uppercase font-black mt-2 tracking-widest pl-1">Invoice Date: <span id="genDate"></span></p>
             </div>
-            <p class="text-[9px] text-slate-400 uppercase font-black mt-2 tracking-widest pl-5">Date: <span id="genDate"></span></p>
         </div>
 
         <!-- Spreadsheet Table -->
@@ -102,13 +98,18 @@
                         <th class="py-3 px-3 text-right w-24">Hrs</th>
                         <th class="py-3 px-3 text-right w-24">Rate ($)</th>
                         <th class="py-3 px-3 text-right w-32">Amount</th>
-                        <th class="py-3 px-3 text-center no-print w-10"></th>
+                        <th class="py-3 px-3 text-center no-print w-10 relative">
+                            <!-- Addition Plus Button -->
+                            <button onclick="smartAddRow()" class="absolute inset-0 w-full h-full bg-blue-600 hover:bg-blue-700 text-white flex items-center justify-center transition-colors shadow-sm" title="Add new row">
+                                <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><line x1="12" y1="5" x2="12" y2="19"></line><line x1="5" y1="12" x2="19" y2="12"></line></svg>
+                            </button>
+                        </th>
                     </tr>
                 </thead>
                 <tbody id="invoiceItems"></tbody>
                 <tr id="emptyState">
                     <td colspan="7" class="py-12 text-center text-slate-300 italic text-sm">
-                        No items added yet. Click "Add Row" above to start.
+                        No items added yet. Click the blue "+" button in the header to start.
                     </td>
                 </tr>
             </table>
@@ -118,6 +119,9 @@
         <div class="mt-10 flex flex-col md:flex-row justify-between items-start gap-10">
             <div class="w-full md:w-1/2">
                 <h4 class="text-[10px] font-bold text-slate-400 uppercase mb-3 tracking-widest">Office Billing Notes</h4>
+                <div class="text-[10px] text-slate-400 mb-2 uppercase tracking-tight leading-tight italic">
+                    Reference: New Students/Families: $90/hr | Masterclasses: $90-120/hr | Legacy Students: $80-85/hr
+                </div>
                 <textarea class="w-full text-xs text-slate-600 leading-relaxed bg-slate-50 p-4 border border-slate-200 rounded-md" rows="4" placeholder="Enter any additional notes here...">Lessons marked "Missed" are excluded from the total balance.</textarea>
             </div>
             
@@ -135,22 +139,30 @@
     </div>
 
     <script>
-        // Update both the display date and the year field automatically
         function updateCurrentDate() {
             const now = new Date();
             document.getElementById('genDate').textContent = now.toLocaleDateString();
-            
-            // Only update year if it hasn't been manually typed yet
-            const yearInput = document.getElementById('currentYearInput');
-            if (!yearInput.value) {
-                yearInput.value = now.getFullYear();
-            }
         }
 
-        // Initialize on load
         updateCurrentDate();
 
-        function addRow(date = "", note = "Piano Lesson", status = "completed", rate = 80, hrs = 1.5) {
+        // Inherit values from the first row if available, otherwise use defaults
+        function smartAddRow() {
+            const firstRow = document.querySelector('#invoiceItems tr');
+            let desc = "Piano Lesson";
+            let rate = 85; 
+            let hrs = 1.5;
+
+            if (firstRow) {
+                desc = firstRow.querySelector('.desc-input').value;
+                rate = firstRow.querySelector('.rate-input').value;
+                hrs = firstRow.querySelector('.hrs-input').value;
+            }
+
+            addRow("", desc, "completed", rate, hrs);
+        }
+
+        function addRow(date = "", note = "Piano Lesson", status = "completed", rate = 85, hrs = 1.5) {
             const tbody = document.getElementById('invoiceItems');
             const row = document.createElement('tr');
             row.className = "text-sm group hover:bg-slate-50 transition-colors";
@@ -159,7 +171,7 @@
                     <input type="text" class="w-full font-mono text-xs text-slate-600" value="${date}" placeholder="MM/DD">
                 </td>
                 <td class="p-2">
-                    <input type="text" class="w-full text-slate-800" value="${note}" placeholder="Description">
+                    <input type="text" class="w-full text-slate-800 desc-input" value="${note}" placeholder="Description">
                 </td>
                 <td class="p-2">
                     <select class="status-select text-[10px] font-black uppercase w-full bg-transparent text-center cursor-pointer" onchange="calculate()">
